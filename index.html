@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCB Digibank Template</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Thêm thư viện để chụp ảnh màn hình -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .phone-screen {
+            width: 375px;
+            height: 812px;
+            background: linear-gradient(rgba(0, 20, 30, 0.85), rgba(0, 10, 15, 0.95)), 
+                        url('https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?q=80&w=1000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .vcb-green { color: #76b82a; }
+        .vcb-bg-green { background-color: #38a605; }
+        .divider { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        input, textarea {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+        }
+        input:focus { outline: none; border-color: #76b82a; }
+        
+        /* Đảm bảo khi chụp ảnh không bị bo góc quá đà bởi container bên ngoài */
+        #capture-area {
+            border-radius: 0; 
+        }
+
+        /* Tùy chỉnh biểu tượng Pin phong cách iOS */
+        .battery-icon {
+            width: 22px;
+            height: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 2.5px;
+            position: relative;
+            padding: 1px;
+        }
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 2px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 0 1px 1px 0;
+        }
+        .battery-level {
+            height: 100%;
+            background-color: white;
+            border-radius: 1px;
+        }
+        
+        /* Cải thiện biểu tượng Wifi iOS */
+        .wifi-symbol {
+            display: flex;
+            align-items: flex-end;
+            gap: 1.5px;
+            height: 12px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="flex flex-col lg:flex-row gap-10 items-start max-w-6xl w-full">
+        
+        <!-- Editor Panel -->
+        <div class="bg-zinc-900 p-6 rounded-2xl w-full lg:w-1/2 border border-zinc-800">
+            <h2 class="text-xl font-bold mb-2 text-white pb-1">Chỉnh sửa thông tin</h2>
+            <p class="text-zinc-500 text-xs mb-6 italic">* Nhấn nút xanh trên điện thoại để tải ảnh về máy</p>
+            
+            <div class="grid grid-cols-1 gap-4 text-sm">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-zinc-400 block mb-1">Số tiền (VND)</label>
+                        <input type="text" id="in-amount" value="5,000" oninput="update()">
+                    </div>
+                    <div>
+                        <label class="text-zinc-400 block mb-1">Pin (%)</label>
+                        <input type="number" id="in-battery" value="96" min="1" max="100" oninput="update()">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Ngày giờ giao dịch</label>
+                    <input type="text" id="in-datetime" placeholder="Đang lấy ngày giờ hiện tại..." oninput="update()">
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Tên người thụ hưởng</label>
+                    <input type="text" id="in-name" value="NGUYỄN VĂN A" oninput="update()">
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Tài khoản thụ hưởng</label>
+                    <input type="text" id="in-acc" value="0071001234567" oninput="update()">
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Ngân hàng thụ hưởng</label>
+                    <input type="text" id="in-bank" value="(ACB) Á Châu" oninput="update()">
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Mã giao dịch</label>
+                    <input type="text" id="in-ref" value="1234567890" oninput="update()">
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Nội dung (Dòng 1 - In hoa)</label>
+                    <input type="text" id="in-msg-line1" value="HOANG TRUNG TUAN" oninput="update()">
+                </div>
+                <div>
+                    <label class="text-zinc-400 block mb-1">Nội dung (Dòng 2 - Thường)</label>
+                    <input type="text" id="in-msg-line2" value="chuyen tien" oninput="update()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div id="capture-area" class="phone-screen rounded-[3rem] border-[8px] border-zinc-800 shrink-0">
+            <!-- Status Bar (iPhone Style) -->
+            <div class="flex justify-between px-8 pt-2 pb-2 items-center text-[14px] font-semibold tracking-tight">
+                <span id="top-time">10:01</span>
+                <div class="flex gap-1.5 items-center">
+                    <!-- Mobile Signal Bars -->
+                    <svg class="w-[18px] h-[11px]" viewBox="0 0 18 12" fill="currentColor">
+                        <rect x="0" y="7" width="3" height="4" rx="1"/>
+                        <rect x="4" y="5" width="3" height="6" rx="1"/>
+                        <rect x="8" y="3" width="3" height="8" rx="1"/>
+                        <rect x="12" y="1" width="3" height="10" rx="1"/>
+                    </svg>
+                    <!-- Wi-Fi Icon iOS style -->
+                    <svg class="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 6c3.13 0 5.96 1.26 8.02 3.3l2.25-2.25C19.46 4.19 15.91 2.5 12 2.5 8.09 2.5 4.54 4.19 1.73 7.05L3.98 9.3C6.04 7.26 8.87 6 12 6zm0 5c1.86 0 3.54.75 4.76 1.97l2.24-2.24C17.21 9.04 14.74 8 12 8s-5.21 1.04-7 2.73l2.24 2.24C8.46 11.75 10.14 11 12 11zm0 5c.61 0 1.16.25 1.56.64l2.23-2.23C14.79 13.41 13.48 13 12 13s-2.79.41-3.79 1.41l2.23 2.23c.4-.39.95-.64 1.56-.64zm0 4c.69 0 1.25-.56 1.25-1.25S12.69 17.5 12 17.5s-1.25.56-1.25 1.25.56 1.25 1.25 1.25z"/>
+                    </svg>
+                    <!-- Battery Icon -->
+                    <div class="flex items-center gap-1">
+                        <div class="battery-icon">
+                            <div id="battery-level-bar" class="battery-level" style="width: 96%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="flex justify-between items-center px-6 mt-1 mb-6">
+                <div class="w-6"></div>
+                <div class="font-bold text-xl tracking-tight">VCB <span class="font-normal opacity-90">Digibank</span></div>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            </div>
+
+            <!-- Success Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="vcb-bg-green rounded-full p-2 ring-8 ring-white/10">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                </div>
+            </div>
+
+            <!-- Transaction Status -->
+            <div class="text-center mb-1">
+                <p class="text-xs font-bold tracking-widest uppercase opacity-90">Chuyển khoản thành công</p>
+                <h1 id="disp-amount" class="text-[28px] font-bold vcb-green mt-1">5,000 VND</h1>
+                <p id="disp-datetime" class="text-[11px] opacity-60 mt-1">10:01 Thứ Năm 17/06/2021</p>
+            </div>
+
+            <!-- Details List -->
+            <div class="mt-8 px-6 space-y-5">
+                <div class="divider pb-3 flex justify-between items-start">
+                    <span class="text-[13px] opacity-60 shrink-0">Tên người thụ hưởng</span>
+                    <span id="disp-name" class="text-[13px] font-semibold text-right pl-4 uppercase">NGUYỄN VĂN A</span>
+                </div>
+                <div class="divider pb-3 flex justify-between items-start">
+                    <span class="text-[13px] opacity-60 shrink-0">Tài khoản thụ hưởng</span>
+                    <span id="disp-acc" class="text-[13px] font-semibold text-right">0071001234567</span>
+                </div>
+                <div class="divider pb-3 flex justify-between items-start">
+                    <span class="text-[13px] opacity-60 shrink-0">Ngân hàng thụ hưởng</span>
+                    <span id="disp-bank" class="text-[13px] font-semibold text-right pl-4">(ACB) Á Châu</span>
+                </div>
+                <div class="divider pb-3 flex justify-between items-start">
+                    <span class="text-[13px] opacity-60 shrink-0">Mã giao dịch</span>
+                    <span id="disp-ref" class="text-[13px] font-semibold text-right">1234567890</span>
+                </div>
+                <div class="divider pb-3 flex justify-between items-start">
+                    <span class="text-[13px] opacity-60 shrink-0">Nội dung</span>
+                    <div class="text-right pl-4">
+                        <span id="disp-msg-1" class="text-[13px] font-bold block uppercase leading-tight">HOANG TRUNG TUAN</span>
+                        <span id="disp-msg-2" class="text-[13px] font-bold block lowercase">chuyen tien</span>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center pt-1">
+                    <span class="text-[13px] opacity-60">Lưu mẫu chuyển tiền</span>
+                    <div class="w-10 h-5 bg-zinc-700 rounded-full relative p-0.5 border border-white/20">
+                        <div class="w-3.5 h-3.5 bg-white/40 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Button -->
+            <div class="absolute bottom-10 left-0 right-0 px-6">
+                <button id="main-action-btn" onclick="downloadReceipt()" class="w-full vcb-bg-green text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+                    Thực hiện giao dịch mới
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function update() {
+            document.getElementById('disp-amount').innerText = document.getElementById('in-amount').value + ' VND';
+            document.getElementById('disp-datetime').innerText = document.getElementById('in-datetime').value;
+            document.getElementById('disp-name').innerText = document.getElementById('in-name').value;
+            document.getElementById('disp-acc').innerText = document.getElementById('in-acc').value;
+            document.getElementById('disp-bank').innerText = document.getElementById('in-bank').value;
+            document.getElementById('disp-ref').innerText = document.getElementById('in-ref').value;
+            
+            document.getElementById('disp-msg-1').innerText = document.getElementById('in-msg-line1').value;
+            document.getElementById('disp-msg-2').innerText = document.getElementById('in-msg-line2').value;
+
+            // Cập nhật mức pin
+            const batteryLevel = document.getElementById('in-battery').value;
+            document.getElementById('battery-level-bar').style.width = batteryLevel + '%';
+
+            // Đồng bộ giờ trên thanh status
+            const timePart = document.getElementById('in-datetime').value.split(' ')[0];
+            if(timePart.includes(':')) {
+                document.getElementById('top-time').innerText = timePart;
+            }
+        }
+
+        // Hàm định dạng ngày giờ theo kiểu "HH:mm Thứ... dd/mm/yyyy"
+        function setCurrentDateTime() {
+            const now = new Date();
+            
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+            const dayName = days[now.getDay()];
+            
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            
+            const formattedDate = `${hours}:${minutes} ${dayName} ${day}/${month}/${year}`;
+            
+            const inputField = document.getElementById('in-datetime');
+            inputField.value = formattedDate;
+            
+            // Chạy update để cập nhật lên màn hình preview
+            update();
+        }
+
+        async function downloadReceipt() {
+            const captureArea = document.getElementById('capture-area');
+            
+            try {
+                const canvas = await html2canvas(captureArea, {
+                    useCORS: true,
+                    scale: 3, 
+                    backgroundColor: null,
+                    borderRadius: 48
+                });
+                
+                const image = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = `VCB-Transfer-Success-${Date.now()}.png`;
+                link.href = image;
+                link.click();
+            } catch (error) {
+                console.error("Lỗi tạo ảnh:", error);
+            }
+        }
+        
+        window.onload = function() {
+            setCurrentDateTime();
+        };
+    </script>
+</body>
+</html>
